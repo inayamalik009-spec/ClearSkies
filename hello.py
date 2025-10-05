@@ -31,11 +31,11 @@ selected_city = st.selectbox("🌍 Select a city:", list(CITIES.keys()))
 # --------------------------------------------
 # OpenAQ API (v3) Setup
 # --------------------------------------------
-OPENAQ_API_KEY = st.secrets["OPENAQ_API_KEY"]
+KEY = st.secrets["KEY"]
 
 def get_air_quality_v3(city_name):
     url = "https://api.openaq.org/v3/measurements"
-    headers = {"Authorization": f"Bearer {OPENAQ_API_KEY}"}
+    headers = {"Authorization": f"Bearer {KEY}"}
     params = {
         "city": city_name,
         "limit": 5,
