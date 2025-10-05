@@ -1,92 +1,69 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
-import requests
+import pandas as pd
 
-# --------------------------------------------
-# Title and Description
-# --------------------------------------------
-st.set_page_config(page_title="ClearSkies - Air Quality App", layout="wide")
-st.title("🌤️ ClearSkies: North American Air Quality Tracker")
-st.write("This app integrates NASA & OpenAQ data to visualize and forecast air quality in major North American cities.")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Air Quality Forecast App", layout="wide")
 
-# --------------------------------------------
-# City List (Major North American cities)
-# --------------------------------------------
-CITIES = {
-    "Los Angeles": {"lat": 34.0522, "lon": -118.2437},
-    "New York City": {"lat": 40.7128, "lon": -74.0060},
-    "Toronto": {"lat": 43.6532, "lon": -79.3832},
-    "Mexico City": {"lat": 19.4326, "lon": -99.1332},
-    "Chicago": {"lat": 41.8781, "lon": -87.6298},
-    "Vancouver": {"lat": 49.2827, "lon": -123.1207},
-    "Houston": {"lat": 29.7604, "lon": -95.3698},
-    "Montreal": {"lat": 45.5017, "lon": -73.5673},
-    "Dallas": {"lat": 32.7767, "lon": -96.7970},
-    "Miami": {"lat": 25.7617, "lon": -80.1918}
+# --- NOTICE ---
+st.warning(
+    "⚠️ Due to the current U.S. government shutdown, some NASA data services are temporarily unavailable. "
+    "This demo uses sample air quality and weather data. Live integration will resume when services are restored."
+)
+
+# --- SAMPLE DATA (Simulating NASA / TEMPO / OpenAQ data) ---
+data = {
+    "City": ["Los Angeles", "New York", "Toronto", "Mexico City", "Vancouver", "Chicago", "Houston", "Miami"],
+    "Lat": [34.0522, 40.7128, 43.65107, 19.4326, 49.2827, 41.8781, 29.7604, 25.7617],
+    "Lon": [-118.2437, -74.0060, -79.347015, -99.1332, -123.1207, -87.6298, -95.3698, -80.1918],
+    "AQI": [120, 90, 60, 150, 55, 100, 130, 70],
+    "Forecast": [
+        "Unhealthy for Sensitive Groups",
+        "Moderate",
+        "Good",
+        "Unhealthy",
+        "Good",
+        "Unhealthy for Sensitive Groups",
+        "Unhealthy",
+        "Moderate"
+    ],
+    "Temp (°C)": [28, 23, 19, 25, 17, 20, 30, 29],
+    "Humidity (%)": [30, 55, 60, 40, 70, 50, 65, 80]
 }
 
-selected_city = st.selectbox("🌍 Select a city:", list(CITIES.keys()))
+df = pd.DataFrame(data)
 
-# --------------------------------------------
-# OpenAQ API (v3) Setup
-# --------------------------------------------
-KEY = st.secrets["KEY"]
+# --- CITY DROPDOWN ---
+selected_city = st.selectbox("🌆 Select a City", df["City"].unique())
 
-def get_air_quality_v3(city_name):
-    url = "https://api.openaq.org/v3/measurements"
-    headers = {"Authorization": f"Bearer {KEY}"}
-    params = {
-        "city": city_name,
-        "limit": 5,
-        "sort": "desc",
-        "order_by": "datetime"
-    }
-    try:
-        r = requests.get(url, headers=headers, params=params, timeout=10)
-        r.raise_for_status()
-        return r.json()
-    except Exception as e:
-        st.error(f"Error fetching air quality: {e}")
-        return None
+# --- GET SELECTED CITY DATA ---
+city_data = df[df["City"] == selected_city].iloc[0]
 
-# --------------------------------------------
-# Fetch and Display Air Quality Data
-# --------------------------------------------
-aq_data = get_air_quality_v3(selected_city)
+st.subheader(f"Air Quality & Weather Forecast for **{selected_city}**")
+st.metric("Air Quality Index (AQI)", city_data["AQI"], "Based on sample data")
+st.write(f"**Forecast:** {city_data['Forecast']}")
+st.write(f"🌡️ Temperature: {city_data['Temp (°C)']} °C")
+st.write(f"💧 Humidity: {city_data['Humidity (%)']} %")
 
-st.subheader(f"🌡️ Air Quality in {selected_city}")
+# --- MAP ---
+m = folium.Map(location=[city_data["Lat"], city_data["Lon"]], zoom_start=6)
 
-if aq_data and "results" in aq_data and len(aq_data["results"]) > 0:
-    for m in aq_data["results"]:
-        st.metric(
-            label=f"{m['parameter'].upper()} ({m['unit']})",
-            value=str(m['value']),
-            help=f"Measured at {m['datetime']['utc']}"
-        )
-else:
-    st.write("No recent air quality data available for this city.")
-
-# --------------------------------------------
-# Folium Map (Option 2: OpenStreetMap tiles)
-# --------------------------------------------
-coords = CITIES[selected_city]
-m = folium.Map(location=[coords["lat"], coords["lon"]], zoom_start=7)
-
-# Simple OSM tile layer (no WMS for now)
-folium.TileLayer(
-    tiles="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attr="OpenStreetMap",
-    name="OpenStreetMap",
-    overlay=True
-).add_to(m)
-
-# City marker
+# Add marker
+popup_text = (
+    f"{selected_city}<br>"
+    f"AQI: {city_data['AQI']}<br>"
+    f"Forecast: {city_data['Forecast']}"
+)
 folium.Marker(
-    [coords["lat"], coords["lon"]],
+    [city_data["Lat"], city_data["Lon"]],
+    popup=popup_text,
     tooltip=selected_city,
-    popup=f"Selected city: {selected_city}"
+    icon=folium.Icon(color="red" if city_data["AQI"] > 100 else "green")
 ).add_to(m)
 
-# Render map in Streamlit
+# Show map
 st_folium(m, width=700, height=500)
+
+# --- FOOTER ---
+st.caption("Data simulated due to NASA API downtime. Structure ready for live integration.")
