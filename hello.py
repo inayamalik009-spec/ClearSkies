@@ -9,10 +9,8 @@ st.set_page_config(page_title="ClearSkies 🌍", layout="wide")
 # --- HEADER ---
 col1, col2 = st.columns([1, 5])
 with col1:
-    st.image(
-        "https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg",
-        width=80
-    )
+    st.image("https://raw.githubusercontent.com/inayamalik009-spec/ClearSkies/main/cloud.png", width=100)
+
 with col2:
     st.title("🌍 ClearSkies")
     st.subheader("North America Air Quality & Weather Visualization Dashboard")
@@ -29,9 +27,9 @@ st.markdown(
     ClearSkies integrates **NASA satellite data (TEMPO)** and **ground-based Pandora spectrometer data**  
     with local weather measurements to forecast and visualize **air quality across North America** in near real-time.
 
-    🛰️ **TEMPO** → Large-scale NO₂ column data from orbit  
-    🧪 **Pandora** → Local ground-based measurements for validation  
-    🌡️ **Weather Data** → Temperature, humidity, wind for pollution dispersion context
+     **TEMPO** → Large-scale NO₂ column data from orbit  
+     **Pandora** → Local ground-based measurements for validation  
+     **Weather Data** → Temperature, humidity, wind for pollution dispersion context
     """
 )
 
@@ -69,7 +67,7 @@ data = {
 df = pd.DataFrame(data)
 
 # --- CITY DROPDOWN ---
-selected_city = st.selectbox("🌆 Select a City", df["City"].unique())
+selected_city = st.selectbox("Select a City", df["City"].unique())
 
 # --- GET SELECTED CITY DATA ---
 city_data = df[df["City"] == selected_city].iloc[0]
@@ -83,7 +81,7 @@ col_b.metric("Temperature (°C)", city_data["Temp (°C)"])
 col_c.metric("Humidity (%)", city_data["Humidity (%)"])
 col_d.metric("PM2.5", f"{city_data['PM2.5 (µg/m³)']} µg/m³")
 
-st.info(f"**Forecast:** {city_data['Forecast']} | 💨 Wind Speed: {city_data['Wind (km/h)']} km/h")
+st.info(f"**Forecast:** {city_data['Forecast']} |  Wind Speed: {city_data['Wind (km/h)']} km/h")
 
 # --- MAP ---
 m = folium.Map(location=[city_data["Lat"], city_data["Lon"]], zoom_start=5, tiles="CartoDB positron")
